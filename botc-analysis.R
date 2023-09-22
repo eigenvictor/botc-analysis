@@ -6,7 +6,8 @@ readxl::excel_sheets("Data/BOTCT.xlsx")
 player_data <- readxl::read_excel("Data/BOTCT.xlsx", sheet = "PLAYERS") %>% 
   fill(GameID, .direction = "down")
 outcomes <- readxl::read_excel("Data/BOTCT.xlsx", sheet = "Game") %>% 
-  select(GameID, winning_team = `Winning team`)
+  select(GameID, winning_team = `Winning team`) %>% 
+  filter(!is.na(winning_team))
 
 outcomes %>% group_by(winning_team) %>% tally()
 
@@ -15,7 +16,8 @@ player_outcome <-
   left_join(outcomes, by = "GameID") %>% 
   mutate(
     player_won = (Alignment == winning_team)
-  )
+  ) %>% 
+  filter(winning_team %in% c("Good", "Evil"))
 
 player_summary <- player_outcome %>% 
   group_by(Player) %>% 
@@ -49,24 +51,36 @@ player_summary <- player_outcome %>%
 teammates <- player_outcome %>% 
   left_join(player_outcome, by = c("GameID", "Alignment"))
 
-teammate_win_rate <- teammates %>%
-  filter(Alignment == "Good") %>% 
-  group_by(Player.x, Player.y) %>% 
-  summarise(
-    win_rate = mean(player_won.x),
-    played_together = n()
-  ) %>% 
-  filter(played_together > 3) %>% 
-  ungroup() %>% 
-  arrange(Player.x, Player.y) %>% 
-  pivot_wider(
-    id_cols = Player.x,
-    names_from = Player.y,
-    values_from = win_rate
-  )
+opponents <- player_outcome %>% 
+  left_join(player_outcome, by = c("GameID")) %>% 
+  filter(Alignment.x != Alignment.y)
 
-teammate_win_rate[,c("Player.x", teammate_win_rate$Player.x)] %>% 
-  View()
+get_co_win_rates <- function(player_pairs) {
+  
+  co_win_rate <- player_pairs %>%
+    group_by(Player.x, Player.y) %>% 
+    summarise(
+      win_rate = paste0(round(100*mean(player_won.x), 1), "%"),
+      played_together = n()
+    ) %>% 
+    filter(played_together > 3) %>% 
+    ungroup() %>% 
+    arrange(Player.x, Player.y) %>% 
+    pivot_wider(
+      id_cols = Player.x,
+      names_from = Player.y,
+      values_from = win_rate,
+      values_fill = ""
+    )
+  
+  return(co_win_rate[,c("Player.x", co_win_rate$Player.x)])
+}
+
+good_co_win_rates <- get_co_win_rates(teammates %>% filter(Alignment == "Good"))
+evil_co_win_rates <- get_co_win_rates(teammates %>% filter(Alignment == "Evil"))
+total_co_win_rates <- get_co_win_rates(teammates)
+
+rival_win_rates <- get_co_win_rates(opponents)
 
 nom_behaviour_by_alignment <- player_outcome %>% 
   filter(!is.na(Nommed), !is.na(`Was Nommed`)) %>% 
