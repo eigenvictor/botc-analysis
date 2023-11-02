@@ -1,11 +1,11 @@
 
 library(dplyr)
 library(tidyr)
+library(googlesheets4)
 
-readxl::excel_sheets("Data/BOTCT.xlsx")
-player_data <- readxl::read_excel("Data/BOTCT.xlsx", sheet = "PLAYERS") %>% 
+player_data <- read_sheet('https://docs.google.com/spreadsheets/d/138ZzfYkyrMZREyXB_a1HF3YU_aflHJXFTvv5otYfYbY', sheet = 'PLAYERS') %>% 
   fill(GameID, .direction = "down")
-outcomes <- readxl::read_excel("Data/BOTCT.xlsx", sheet = "Game") %>% 
+outcomes <- read_sheet('https://docs.google.com/spreadsheets/d/138ZzfYkyrMZREyXB_a1HF3YU_aflHJXFTvv5otYfYbY', sheet = 'Game') %>% 
   select(GameID, winning_team = `Winning team`) %>% 
   filter(!is.na(winning_team))
 
@@ -71,9 +71,10 @@ get_co_win_rates <- function(player_pairs) {
       names_from = Player.y,
       values_from = win_rate,
       values_fill = ""
-    )
+    ) %>% 
+    rename(Player = Player.x)
   
-  return(co_win_rate[,c("Player.x", co_win_rate$Player.x)])
+  return(co_win_rate[,c("Player", co_win_rate$Player)])
 }
 
 good_co_win_rates <- get_co_win_rates(teammates %>% filter(Alignment == "Good"))
@@ -110,3 +111,32 @@ player_outcome %>%
   filter(games_played > 3) %>% 
   arrange(desc(win_rate)) %>% 
   View()
+
+
+
+
+write_sheet(
+  player_summary,
+  ss = 'https://docs.google.com/spreadsheets/d/138ZzfYkyrMZREyXB_a1HF3YU_aflHJXFTvv5otYfYbY',
+  sheet = "Summary"
+)
+write_sheet(
+  total_co_win_rates,
+  ss = 'https://docs.google.com/spreadsheets/d/138ZzfYkyrMZREyXB_a1HF3YU_aflHJXFTvv5otYfYbY',
+  sheet = "Total co-win rates"
+)
+write_sheet(
+  good_co_win_rates,
+  ss = 'https://docs.google.com/spreadsheets/d/138ZzfYkyrMZREyXB_a1HF3YU_aflHJXFTvv5otYfYbY',
+  sheet = "Good co-win rates"
+)
+write_sheet(
+  evil_co_win_rates,
+  ss = 'https://docs.google.com/spreadsheets/d/138ZzfYkyrMZREyXB_a1HF3YU_aflHJXFTvv5otYfYbY',
+  sheet = "Evil co-win rates"
+)
+write_sheet(
+  rival_win_rates,
+  ss = 'https://docs.google.com/spreadsheets/d/138ZzfYkyrMZREyXB_a1HF3YU_aflHJXFTvv5otYfYbY',
+  sheet = "Rival win rates"
+)
