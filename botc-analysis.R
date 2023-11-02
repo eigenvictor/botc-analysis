@@ -30,7 +30,7 @@ player_summary <- player_outcome %>%
     won_while_evil = sum(Alignment == "Evil" & winning_team == "Evil"),
     times_outsider = sum(Type == "Outsider"),
     times_demon = sum(Type == "Demon"),
-    times_nommed = sum(Nommed, na.rm = T),
+    times_nommer = sum(Nommed, na.rm = T),
     times_nommee = sum(`Was Nommed`, na.rm = T)
   ) %>% 
   ungroup() %>% 
@@ -42,7 +42,7 @@ player_summary <- player_outcome %>%
     evil_win_rate = won_while_evil / times_evil,
     good_win_rate = won_while_good / times_good,
     demon_rate = times_demon / games_played,
-    nommed_avg = times_nommed / games_played,
+    nommer_avg = times_nommer / games_played,
     nommee_avg = times_nommee / games_played,
     outsider_rate = times_outsider / games_played
   ) %>% 
@@ -88,7 +88,7 @@ nom_behaviour_by_alignment <- player_outcome %>%
   group_by(Player, Alignment) %>% 
   summarise(
     games_played = n(),
-    times_nommed = sum(Nommed, na.rm = T),
+    times_nommer = sum(Nommed, na.rm = T),
     times_nommee = sum(`Was Nommed`, na.rm = T)
   ) %>% 
   ungroup() %>% 
@@ -96,12 +96,12 @@ nom_behaviour_by_alignment <- player_outcome %>%
     Player,
     Alignment,
     games_played,
-    nommed_avg = times_nommed / games_played,
+    nommed_avg = times_nommer / games_played,
     nommee_avg = times_nommee / games_played
   ) %>% 
   filter(games_played > 3)
 
-player_outcome %>% 
+role_win_rates <- player_outcome %>% 
   group_by(Role) %>% 
   summarise(
     games_played = n(),
@@ -109,8 +109,7 @@ player_outcome %>%
   ) %>% 
   ungroup() %>% 
   filter(games_played > 3) %>% 
-  arrange(desc(win_rate)) %>% 
-  View()
+  arrange(desc(win_rate))
 
 
 
@@ -119,6 +118,11 @@ write_sheet(
   player_summary,
   ss = 'https://docs.google.com/spreadsheets/d/138ZzfYkyrMZREyXB_a1HF3YU_aflHJXFTvv5otYfYbY',
   sheet = "Summary"
+)
+write_sheet(
+  role_win_rates,
+  ss = 'https://docs.google.com/spreadsheets/d/138ZzfYkyrMZREyXB_a1HF3YU_aflHJXFTvv5otYfYbY',
+  sheet = "Character summary"
 )
 write_sheet(
   total_co_win_rates,
